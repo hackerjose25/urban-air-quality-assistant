@@ -44,7 +44,7 @@ The tests use Node's built-in test runner (no extra dependencies) and cover AQI 
 
 ## Deploy (Vercel)
 
-Import the repo at vercel.com/new and add `GEMINI_API_KEY` under Environment Variables. `vercel.json` sends every request to `api/index.js`, which serves both the API and the static frontend.
+Import the repo at vercel.com/new and add `GEMINI_API_KEY` under Environment Variables. `vercel.json` serves `public/` from Vercel's CDN (with the same security headers) and routes `/api/*` to the Express app in `api/index.js`.
 
 ## Deploy (Google Cloud Run)
 
