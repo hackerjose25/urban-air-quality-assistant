@@ -42,6 +42,10 @@ npm test
 
 The tests use Node's built-in test runner (no extra dependencies) and cover AQI categorisation, impact calculations, input validation, LLM output parsing, caching, the API routes, security headers, rate limiting and error handling. All network calls are injected and mocked.
 
+## Deploy (Vercel)
+
+Import the repo at vercel.com/new and add `GEMINI_API_KEY` under Environment Variables. `vercel.json` sends every request to `api/index.js`, which serves both the API and the static frontend.
+
 ## Deploy (Google Cloud Run)
 
 ```bash
