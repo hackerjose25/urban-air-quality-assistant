@@ -63,16 +63,16 @@ function parseModelJson(text) {
 }
 
 async function generateAdvice(air, profile, baseline, { apiKey, model, fetchImpl = fetch } = {}) {
-  const name = encodeURIComponent(model || 'gemini-2.0-flash');
+  const name = encodeURIComponent(model || 'gemini-3.5-flash-lite');
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${name}:generateContent`;
   const res = await fetchImpl(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-    signal: AbortSignal.timeout(15000),
+    signal: AbortSignal.timeout(25000),
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: SYSTEM }] },
       contents: [{ role: 'user', parts: [{ text: buildPrompt(air, profile, baseline) }] }],
-      generationConfig: { temperature: 0.4, maxOutputTokens: 1200, responseMimeType: 'application/json' },
+      generationConfig: { temperature: 0.4, maxOutputTokens: 4096, responseMimeType: 'application/json' },
     }),
   });
   if (!res.ok) throw new Error(`Gemini error ${res.status}`);
