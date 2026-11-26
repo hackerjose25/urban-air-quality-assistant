@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Live air quality and AI-powered, personalised advice to help families get through winter smog.">
+  <meta name="theme-color" content="#0f3d2e">
+  <title>Urban Air Quality Assistant</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%232e7d32'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header class="site-header">
+    <h1>Urban Air Quality Assistant</h1>
+    <p class="tagline">Live air data and personalised steps to protect your family and cut emissions.</p>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <section aria-labelledby="profile-heading" class="card">
+      <h2 id="profile-heading">Your situation</h2>
+      <form id="profile-form" novalidate>
+        <fieldset>
+          <legend>Location</legend>
+          <div class="row">
+            <label for="city">City or area</label>
+            <div class="inline">
+              <input id="city" name="city" type="text" autocomplete="address-level2" maxlength="80"
+                     placeholder="e.g. Delhi" aria-describedby="city-help">
+              <button type="button" id="search-btn">Search</button>
+              <button type="button" id="locate-btn" class="secondary">Use my location</button>
+            </div>
+            <p id="city-help" class="help">Search for a city, or share your location. Coordinates are rounded to about 1 km.</p>
+            <ul id="city-results" class="results" aria-label="Matching places" hidden></ul>
+            <p id="selected-location" class="selected" aria-live="polite"></p>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Who lives with you?</legend>
+          <div class="chips">
+            <label><input type="checkbox" name="household" value="children"> Children</label>
+            <label><input type="checkbox" name="household" value="elderly"> Elderly</label>
+            <label><input type="checkbox" name="household" value="asthma"> Asthma or lung condition</label>
+            <label><input type="checkbox" name="household" value="heart"> Heart condition</label>
+            <label><input type="checkbox" name="household" value="pregnant"> Pregnancy</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Daily routine</legend>
+          <div class="grid-2">
+            <div class="row">
+              <label for="commuteMode">Usual commute</label>
+              <select id="commuteMode" name="commuteMode">
+                <option value="car">Car or motorbike</option>
+                <option value="bus">Bus</option>
+                <option value="metro">Metro or train</option>
+                <option value="cycle">Cycle</option>
+                <option value="walk">Walk</option>
+                <option value="wfh" selected>Work from home</option>
+              </select>
+            </div>
+            <div class="row">
+              <label for="commuteKm">One-way distance (km)</label>
+              <input id="commuteKm" name="commuteKm" type="number" min="0" max="200" step="0.5" value="0" inputmode="decimal">
+            </div>
+          </div>
+          <label class="check"><input type="checkbox" id="hasPurifier" name="hasPurifier"> I have an air purifier</label>
+        </fieldset>
+
+        <button type="submit" id="submit-btn" class="primary">Get my plan</button>
+        <p id="form-error" class="error" role="alert"></p>
+      </form>
+    </section>
+
+    <div id="status" class="visually-hidden" role="status" aria-live="polite"></div>
+
+    <section id="results" aria-labelledby="results-heading" hidden>
+      <h2 id="results-heading" class="visually-hidden">Your results</h2>
+
+      <article class="card aqi-card" id="aqi-card">
+        <div class="aqi-main">
+          <p class="aqi-label">Air quality now</p>
+          <p class="aqi-value"><span id="aqi-number"></span> <span class="aqi-unit">US AQI</span></p>
+          <p class="aqi-cat" id="aqi-category"></p>
+        </div>
+        <dl class="pollutants" id="pollutants"></dl>
+        <div class="forecast">
+          <h3>Next 24 hours</h3>
+          <div id="forecast-bars" class="bars" role="img"></div>
+          <p id="best-window" class="help"></p>
+        </div>
+      </article>
+
+      <article class="card">
+        <p id="summary" class="summary"></p>
+        <p class="source" id="source"></p>
+      </article>
+
+      <div class="advice-grid">
+        <article class="card" aria-labelledby="routines-h">
+          <h3 id="routines-h">Low-exposure daily routine</h3>
+          <ul id="routines" class="advice"></ul>
+        </article>
+        <article class="card" aria-labelledby="indoor-h">
+          <h3 id="indoor-h">Indoor air quality tips</h3>
+          <ul id="indoor" class="advice"></ul>
+        </article>
+        <article class="card" aria-labelledby="sustainable-h">
+          <h3 id="sustainable-h">Lower-emission alternatives</h3>
+          <ul id="sustainable" class="advice"></ul>
+        </article>
+      </div>
+      <p class="disclaimer">These suggestions are general guidance, not medical advice. If you have symptoms, talk to a doctor.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Air data: <a href="https://open-meteo.com/" rel="noopener noreferrer">Open-Meteo</a> (CAMS). Advice: Google Gemini with an expert rule engine as fallback.</p>
+  </footer>
+</body>
+</html>
