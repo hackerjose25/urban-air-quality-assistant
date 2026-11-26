@@ -1,6 +1,6 @@
 # Urban Air Quality Assistant
 
-**Live demo:** https://hack2skill-challenge6.vercel.app
+**Live demo:** [https://hack2skill-challenge6.vercel.app](https://air-quality-assistant-jose.vercel.app/)
 
 A GenAI-powered assistant that helps families and communities get through severe winter smog and urban air pollution. It combines **live air quality data** with **Google Gemini** to suggest:
 
