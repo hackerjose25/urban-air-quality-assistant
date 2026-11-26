@@ -12,7 +12,17 @@
   const colorFor = (aqi) => AQI_COLORS.find(([max]) => aqi <= max)[1];
 
   function announce(msg) { $('status').textContent = msg; }
-  function setError(msg) { $('form-error').textContent = msg || ''; }
+  /** Show an error and mark the offending field invalid (or clear all errors). */
+  function setError(msg, fieldId) {
+    $('form-error').textContent = msg || '';
+    document.querySelectorAll('[aria-invalid="true"]').forEach((f) => f.removeAttribute('aria-invalid'));
+    if (msg && fieldId) {
+      const field = $(fieldId);
+      field.setAttribute('aria-invalid', 'true');
+      field.setAttribute('aria-errormessage', 'form-error');
+      field.focus();
+    }
+  }
 
   function el(tag, props = {}, children = []) {
     const node = document.createElement(tag);
@@ -44,7 +54,7 @@
   async function searchCity() {
     setError('');
     const q = $('city').value.trim();
-    if (q.length < 2) { setError('Type at least 2 characters to search.'); $('city').focus(); return; }
+    if (q.length < 2) { setError('Type at least 2 characters to search.', 'city'); return; }
     announce('Searching…');
     try {
       const { results } = await api(`/api/geocode?q=${encodeURIComponent(q)}`);
@@ -156,12 +166,13 @@
   async function submit(e) {
     e.preventDefault();
     setError('');
-    if (state.lat === null) { setError('Choose a location first.'); $('city').focus(); return; }
+    if (state.lat === null) { setError('Choose a location first.', 'city'); return; }
     const km = Number($('commuteKm').value);
-    if (!(km >= 0 && km <= 200)) { setError('Commute distance must be between 0 and 200 km.'); $('commuteKm').focus(); return; }
+    if (!(km >= 0 && km <= 200)) { setError('Commute distance must be between 0 and 200 km.', 'commuteKm'); return; }
 
     const btn = $('submit-btn');
     btn.disabled = true;
+    $('results').setAttribute('aria-busy', 'true');
     btn.textContent = 'Building your plan…';
     announce('Fetching air quality and building your plan…');
     saveProfile();
@@ -178,6 +189,7 @@
     } finally {
       btn.disabled = false;
       btn.textContent = 'Get my plan';
+      $('results').removeAttribute('aria-busy');
     }
   }
 

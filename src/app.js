@@ -88,7 +88,6 @@ function createApp({
   app.use('/api/', (_req, res) => res.status(404).json({ error: 'Not found' }));
   app.use(express.static(path.join(__dirname, '..', 'public'), { maxAge: '1h' }));
 
-  // eslint-disable-next-line no-unused-vars
   app.use((err, _req, res, _next) => {
     if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Invalid JSON' });
     if (err.type === 'entity.too.large') return res.status(413).json({ error: 'Payload too large' });

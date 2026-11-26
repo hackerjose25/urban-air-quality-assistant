@@ -1,0 +1,29 @@
+'use strict';
+
+const js = require('@eslint/js');
+const globals = require('globals');
+
+module.exports = [
+  { ignores: ['node_modules/', 'coverage/'] },
+  js.configs.recommended,
+  {
+    files: ['src/**/*.js', 'api/**/*.js', 'test/**/*.js', 'eslint.config.js'],
+    languageOptions: { ecmaVersion: 2023, sourceType: 'commonjs', globals: globals.node },
+  },
+  {
+    files: ['public/**/*.js'],
+    languageOptions: { ecmaVersion: 2023, sourceType: 'script', globals: globals.browser },
+  },
+  {
+    rules: {
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      eqeqeq: ['error', 'always'],
+      'no-var': 'error',
+      'prefer-const': 'error',
+      'no-eval': 'error',
+      'no-implied-eval': 'error',
+      'no-new-func': 'error',
+      strict: ['error', 'global'],
+    },
+  },
+];

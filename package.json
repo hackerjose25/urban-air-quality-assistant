@@ -3,15 +3,26 @@
   "version": "1.0.0",
   "description": "GenAI-powered assistant that helps families navigate winter smog with low-emission routines, indoor air hacks and impact explanations.",
   "main": "src/index.js",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node src/index.js",
-    "test": "node --test test/"
+    "test": "node --test test/",
+    "test:coverage": "node --test --experimental-test-coverage test/",
+    "lint": "eslint .",
+    "audit": "npm audit --omit=dev",
+    "check": "npm run lint && npm test && npm run audit"
   },
   "license": "MIT",
   "dependencies": {
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "globals": "^17.14.0"
   }
 }

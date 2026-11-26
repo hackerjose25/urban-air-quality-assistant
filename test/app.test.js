@@ -137,6 +137,31 @@ test('air quality client rounds coordinates, parses data and caches results', as
   assert.equal(calls, 1, 'second call served from cache');
 });
 
+test('geocode formats place names and caches case-insensitively', async () => {
+  let calls = 0;
+  const fetchImpl = async () => {
+    calls += 1;
+    return {
+      ok: true,
+      json: async () => ({ results: [{ name: 'Delhi', admin1: 'NCT', country: 'India', latitude: 28.6, longitude: 77.2 }] }),
+    };
+  };
+  const client = createAirQualityClient({ fetchImpl });
+  const r = await client.geocode('Delhi');
+  assert.deepEqual(r, [{ name: 'Delhi, NCT, India', lat: 28.6, lon: 77.2 }]);
+  await client.geocode('DELHI');
+  assert.equal(calls, 1);
+  const none = createAirQualityClient({ fetchImpl: async () => ({ ok: true, json: async () => ({}) }) });
+  assert.deepEqual(await none.geocode('Nowhere'), []);
+});
+
+test('geocode returns 502 when the provider fails', async () => {
+  const airClient = fakeAir({ geocode: async () => { throw new Error('down'); } });
+  await withServer({ airClient }, async (base) => {
+    assert.equal((await fetch(`${base}/api/geocode?q=Delhi`)).status, 502);
+  });
+});
+
 test('air quality client surfaces upstream errors', async () => {
   const client = createAirQualityClient({ fetchImpl: async () => ({ ok: false, status: 500 }) });
   await assert.rejects(client.getAirQuality(0, 0), /500/);
