@@ -8,8 +8,8 @@
   },
   "scripts": {
     "start": "node src/index.js",
-    "test": "node --test test/",
-    "test:coverage": "node --test --experimental-test-coverage test/",
+    "test": "node --test",
+    "test:coverage": "node --test --experimental-test-coverage",
     "lint": "eslint .",
     "audit": "npm audit --omit=dev",
     "check": "npm run lint && npm test && npm run audit"
