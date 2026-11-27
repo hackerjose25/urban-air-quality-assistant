@@ -1,30 +1,16 @@
 'use strict';
 
-/**
- * Frontend controller: location search, profile form, and rendering of the
- * live air data and personalised plan. All DOM writes use textContent (XSS-safe).
- */
 (() => {
-  /** @param {string} id */
   const $ = (id) => document.getElementById(id);
   const state = { lat: null, lon: null, city: '' };
   const STORAGE_KEY = 'uaqa-profile';
-  const MIN_QUERY_LENGTH = 2;
-  const MAX_COMMUTE_KM = 200;
-  const GEO_OPTIONS = Object.freeze({ timeout: 10_000, maximumAge: 600_000 });
-  const SUBMIT_LABEL = 'Get my plan';
-  const BUSY_LABEL = 'Building your plan…';
-  /** Extract "HH:MM" from an ISO local time such as 2026-11-27T14:00. */
-  const hourOf = (isoTime) => isoTime.slice(11, 16);
 
   const AQI_COLORS = [
     [50, '#2e7d32'], [100, '#c9a000'], [150, '#e07000'],
     [200, '#c62828'], [300, '#6a1b9a'], [Infinity, '#4e0d1c'],
   ];
-  /** Colour of the US EPA band that contains this AQI. */
   const colorFor = (aqi) => AQI_COLORS.find(([max]) => aqi <= max)[1];
 
-  /** Announce a status message to screen readers via the live region. */
   function announce(msg) { $('status').textContent = msg; }
   /** Show an error and mark the offending field invalid (or clear all errors). */
   function setError(msg, fieldId) {
@@ -38,12 +24,6 @@
     }
   }
 
-  /**
-   * Create an element safely.
-   * @param {string} tag
-   * @param {Record<string,string>} [props] `text` sets textContent, `class` sets className, others are attributes
-   * @param {Node[]} [children]
-   */
   function el(tag, props = {}, children = []) {
     const node = document.createElement(tag);
     Object.entries(props).forEach(([k, v]) => {
@@ -55,7 +35,6 @@
     return node;
   }
 
-  /** Store the chosen coordinates, show them, and persist the profile. */
   function setLocation(lat, lon, name) {
     state.lat = lat;
     state.lon = lon;
@@ -65,10 +44,6 @@
     saveProfile();
   }
 
-  /**
-   * Call the backend and return its JSON.
-   * @throws {Error} with the server's error message on non-2xx responses
-   */
   async function api(path, opts) {
     const res = await fetch(path, opts);
     const data = await res.json().catch(() => ({}));
@@ -76,11 +51,10 @@
     return data;
   }
 
-  /** Look up the typed city and list matching places as buttons. */
   async function searchCity() {
     setError('');
     const q = $('city').value.trim();
-    if (q.length < MIN_QUERY_LENGTH) { setError('Type at least 2 characters to search.', 'city'); return; }
+    if (q.length < 2) { setError('Type at least 2 characters to search.', 'city'); return; }
     announce('Searching…');
     try {
       const { results } = await api(`/api/geocode?q=${encodeURIComponent(q)}`);
@@ -98,7 +72,6 @@
     } catch (e) { setError(e.message); }
   }
 
-  /** Use the browser's geolocation as the location. */
   function locate() {
     setError('');
     if (!navigator.geolocation) { setError('Your browser does not support location access.'); return; }
@@ -106,11 +79,10 @@
     navigator.geolocation.getCurrentPosition(
       (pos) => setLocation(pos.coords.latitude, pos.coords.longitude, 'Your current location'),
       () => setError('Could not get your location. Search for your city instead.'),
-      GEO_OPTIONS,
+      { timeout: 10000, maximumAge: 600000 },
     );
   }
 
-  /** Read the form into the request body sent to /api/advice. */
   function collectProfile() {
     return {
       lat: state.lat,
@@ -123,12 +95,10 @@
     };
   }
 
-  /** Remember the profile locally so returning users skip the form. */
   function saveProfile() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(collectProfile())); } catch { /* storage unavailable */ }
   }
 
-  /** Refill the form from a previously saved profile. */
   function restoreProfile() {
     try {
       const p = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
@@ -144,7 +114,6 @@
     } catch { /* ignore corrupt storage */ }
   }
 
-  /** Render advice items, each with its Impact line. */
   function renderList(id, items) {
     $(id).replaceChildren(...items.map((i) => el('li', {}, [
       el('strong', { text: i.title }),
@@ -153,41 +122,34 @@
     ])));
   }
 
-  /** Show the headline AQI and its category colour. */
-  function renderAqi(air, advice) {
-    $('aqi-card').style.setProperty('--aqi-color', colorFor(air.aqi));
+  function render({ air, advice }) {
+    const color = colorFor(air.aqi);
+    $('aqi-card').style.setProperty('--aqi-color', color);
     $('aqi-number').textContent = Math.round(air.aqi);
     $('aqi-category').textContent = advice.category.label;
-  }
 
-  /** Show pollutant concentrations as a definition list. */
-  function renderPollutants(air) {
     const fmt = (v) => (typeof v === 'number' ? `${v.toFixed(1)} µg/m³` : 'n/a');
     $('pollutants').replaceChildren(
       ...[['PM2.5', air.pm25], ['PM10', air.pm10], ['NO₂', air.no2], ['O₃', air.o3]]
         .flatMap(([k, v]) => [el('dt', { text: k }), el('dd', { text: fmt(v) })]),
     );
-  }
 
-  /** Draw the 24-hour bars and describe the cleanest and worst hours. */
-  function renderForecast(hours) {
+    const hours = air.hourly || [];
     const max = Math.max(...hours.map((h) => h.aqi), 1);
     $('forecast-bars').replaceChildren(...hours.map((h) => {
-      const bar = el('span', { title: `${hourOf(h.time)}: AQI ${h.aqi}` });
+      const bar = el('span', { title: `${h.time.slice(11, 16)}: AQI ${h.aqi}` });
       bar.style.height = `${(h.aqi / max) * 100}%`;
       bar.style.background = colorFor(h.aqi);
       return bar;
     }));
-    if (!hours.length) return;
-    const best = hours.reduce((a, b) => (b.aqi < a.aqi ? b : a));
-    const worst = hours.reduce((a, b) => (b.aqi > a.aqi ? b : a));
-    const text = `Cleanest hour: ${hourOf(best.time)} (AQI ${best.aqi}). Worst: ${hourOf(worst.time)} (AQI ${worst.aqi}).`;
-    $('best-window').textContent = text;
-    $('forecast-bars').setAttribute('aria-label', `AQI forecast chart for the next 24 hours. ${text}`);
-  }
+    if (hours.length) {
+      const best = hours.reduce((a, b) => (b.aqi < a.aqi ? b : a));
+      const worst = hours.reduce((a, b) => (b.aqi > a.aqi ? b : a));
+      const text = `Cleanest hour: ${best.time.slice(11, 16)} (AQI ${best.aqi}). Worst: ${worst.time.slice(11, 16)} (AQI ${worst.aqi}).`;
+      $('best-window').textContent = text;
+      $('forecast-bars').setAttribute('aria-label', `AQI forecast chart for the next 24 hours. ${text}`);
+    }
 
-  /** Show the summary, its source, and the three advice sections. */
-  function renderAdvice(advice) {
     $('summary').textContent = advice.summary;
     $('source').textContent = advice.source === 'gemini'
       ? 'Personalised by Google Gemini, grounded in live air data.'
@@ -195,45 +157,23 @@
     renderList('routines', advice.routines);
     renderList('indoor', advice.indoor);
     renderList('sustainable', advice.sustainable);
-  }
 
-  /** Render the whole result and move focus to it. */
-  function render({ air, advice }) {
-    renderAqi(air, advice);
-    renderPollutants(air);
-    renderForecast(air.hourly || []);
-    renderAdvice(advice);
     $('results').hidden = false;
     $('aqi-card').setAttribute('tabindex', '-1');
     $('aqi-card').focus();
   }
 
-  /** Toggle the loading state on the submit button and results region. */
-  function setBusy(busy) {
-    const btn = $('submit-btn');
-    btn.disabled = busy;
-    btn.textContent = busy ? BUSY_LABEL : SUBMIT_LABEL;
-    if (busy) $('results').setAttribute('aria-busy', 'true');
-    else $('results').removeAttribute('aria-busy');
-  }
-
-  /** Validate the form; returns false (and shows an error) when invalid. */
-  function validateForm() {
-    if (state.lat === null) { setError('Choose a location first.', 'city'); return false; }
-    const km = Number($('commuteKm').value);
-    if (!(km >= 0 && km <= MAX_COMMUTE_KM)) {
-      setError(`Commute distance must be between 0 and ${MAX_COMMUTE_KM} km.`, 'commuteKm');
-      return false;
-    }
-    return true;
-  }
-
-  /** Form submit: fetch air data and the plan, then render it. */
   async function submit(e) {
     e.preventDefault();
     setError('');
-    if (!validateForm()) return;
-    setBusy(true);
+    if (state.lat === null) { setError('Choose a location first.', 'city'); return; }
+    const km = Number($('commuteKm').value);
+    if (!(km >= 0 && km <= 200)) { setError('Commute distance must be between 0 and 200 km.', 'commuteKm'); return; }
+
+    const btn = $('submit-btn');
+    btn.disabled = true;
+    $('results').setAttribute('aria-busy', 'true');
+    btn.textContent = 'Building your plan…';
     announce('Fetching air quality and building your plan…');
     saveProfile();
     try {
@@ -247,7 +187,9 @@
     } catch (err) {
       setError(err.message);
     } finally {
-      setBusy(false);
+      btn.disabled = false;
+      btn.textContent = 'Get my plan';
+      $('results').removeAttribute('aria-busy');
     }
   }
 
