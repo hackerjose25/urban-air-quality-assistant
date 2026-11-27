@@ -8,6 +8,8 @@
 
 **Live demo:** https://air-quality-assistant-jose.vercel.app/
 
+**Demo video (2 min):** https://drive.google.com/file/d/1QS6Zei7DTGDk1x_fz26l1KA7aBi9pC8I/view?usp=sharing
+
 A GenAI-powered assistant that helps families and communities get through **severe winter smog and urban air pollution**. It combines **live air quality data** for the user's location with **Google Gemini** to produce a personalised daily plan, and **every suggestion explains its direct impact**.
 
 ## The problem
