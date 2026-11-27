@@ -1,7 +1,7 @@
 # 🌫️ Urban Air Quality Assistant
 
 [![CI](https://github.com/hackerjose25/urban-air-quality-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/hackerjose25/urban-air-quality-assistant/actions/workflows/ci.yml)
-![Tests](https://img.shields.io/badge/tests-44%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-49%20passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-99.8%25-brightgreen)
 ![Vulnerabilities](https://img.shields.io/badge/npm%20audit-0%20vulnerabilities-brightgreen)
 ![Node](https://img.shields.io/badge/node-%3E%3D20-blue)
@@ -50,7 +50,9 @@ Express API  ── helmet · rate limit · 10 KB body cap · input whitelist
 ### ✅ Code Quality
 - Clear layers: **pure domain logic** (`aqi.js`, `validate.js`) has no I/O, and I/O lives in separate client modules.
 - **Dependency injection**: `createApp({ airClient, generateAdvice, … })`, so everything can be tested without network access.
-- Small, single-purpose modules with JSDoc; ESLint (flat config, strict rules) runs in CI with **0 errors**.
+- Small, single-purpose functions with JSDoc on every function: route handlers, middleware and the rule engine are split into focused units (for example `routineAdvice`, `indoorAdvice`, `sustainableAdvice`).
+- **No magic numbers**: every limit, timeout and model setting lives in one frozen `src/config.js`.
+- ESLint (flat config) enforces **complexity ≤ 10, max 50 lines per function, max depth 3, max 4 params**, `no-shadow` and `no-param-reassign`; it runs in CI with **0 errors**.
 - Only **3 runtime dependencies**, and the frontend needs no framework or build step.
 
 ### 🔒 Security
@@ -70,7 +72,7 @@ See [SECURITY.md](SECURITY.md). In short:
 - The frontend is about 15 KB in total, with no framework, deferred script loading and one API call per plan.
 
 ### 🧪 Testing
-- **44 tests**, **99.8% line coverage**, using Node's built-in `node:test` (no test-framework dependency).
+- **49 tests**, **99.8% line coverage**, using Node's built-in `node:test` (no test-framework dependency).
 - **Unit tests:** AQI bands and edge cases, impact calculations, validation and sanitising, cache expiry and eviction, LLM output parsing.
 - **Integration tests:** every API route, security headers, rate limiting (429), bad JSON (400), oversized body (413), upstream failure (502), Gemini fallback.
 - **Accessibility tests:** labels, landmarks, live regions and **WCAG AA contrast ratios computed for both themes**.
@@ -122,9 +124,10 @@ src/
   gemini.js          Gemini prompt, REST call and output validation
   validate.js        Request whitelisting and sanitising (pure)
   cache.js           TTL/LRU cache
+  config.js          All limits, timeouts and model settings (frozen)
   index.js           Local server entry point
 public/              Accessible vanilla HTML, CSS and JS frontend
-test/                44 node:test tests (unit, integration, accessibility)
+test/                49 node:test tests (unit, integration, accessibility)
 .github/workflows/   CI: lint, test, coverage, audit
 ```
 

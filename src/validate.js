@@ -1,12 +1,30 @@
 'use strict';
 
+const { config } = require('./config');
+
+const { cityMaxLength, cityMinLength, commuteKmMax } = config.limits;
+const LAT_MAX = 90;
+const LON_MAX = 180;
+
 const HOUSEHOLD = ['children', 'elderly', 'asthma', 'heart', 'pregnant', 'adults'];
 const MODES = ['car', 'bus', 'metro', 'cycle', 'walk', 'wfh'];
 const TEXT_RE = /[^\p{L}\p{N} ,.'-]/gu;
 
 /** Strip everything except letters, digits and basic punctuation. */
-function cleanText(s, max = 80) {
+function cleanText(s, max = cityMaxLength) {
   return typeof s === 'string' ? s.replace(TEXT_RE, '').trim().slice(0, max) : '';
+}
+
+/**
+ * Parse a coordinate that must lie within [-limit, limit].
+ * @param {unknown} raw
+ * @param {number} limit
+ * @returns {number|null} the number, or null when missing or out of range
+ */
+function toNumberInRange(raw, limit) {
+  if (raw === undefined) return null;
+  const value = Number(raw);
+  return Number.isFinite(value) && Math.abs(value) <= limit ? value : null;
 }
 
 /**
@@ -18,23 +36,13 @@ function validateAdviceRequest(body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
     return { ok: false, error: 'Body must be a JSON object' };
   }
-  const lat = Number(body.lat);
-  const lon = Number(body.lon);
-  if (body.lat === undefined || !Number.isFinite(lat) || lat < -90 || lat > 90) {
-    return { ok: false, error: 'lat must be between -90 and 90' };
-  }
-  if (body.lon === undefined || !Number.isFinite(lon) || lon < -180 || lon > 180) {
-    return { ok: false, error: 'lon must be between -180 and 180' };
-  }
+  const lat = toNumberInRange(body.lat, LAT_MAX);
+  if (lat === null) return { ok: false, error: `lat must be between -${LAT_MAX} and ${LAT_MAX}` };
+  const lon = toNumberInRange(body.lon, LON_MAX);
+  if (lon === null) return { ok: false, error: `lon must be between -${LON_MAX} and ${LON_MAX}` };
 
-  const household = Array.isArray(body.household)
-    ? [...new Set(body.household.filter((h) => HOUSEHOLD.includes(h)))]
-    : [];
-  const commuteMode = MODES.includes(body.commuteMode) ? body.commuteMode : 'wfh';
-  const commuteKm = Number(body.commuteKm ?? 0);
-  if (!Number.isFinite(commuteKm) || commuteKm < 0 || commuteKm > 200) {
-    return { ok: false, error: 'commuteKm must be between 0 and 200' };
-  }
+  const commuteKm = parseCommuteKm(body.commuteKm);
+  if (commuteKm === null) return { ok: false, error: `commuteKm must be between 0 and ${commuteKmMax}` };
 
   return {
     ok: true,
@@ -42,18 +50,38 @@ function validateAdviceRequest(body) {
       lat,
       lon,
       city: cleanText(body.city),
-      household,
-      commuteMode,
-      commuteKm: Math.round(commuteKm * 10) / 10,
+      household: parseHousehold(body.household),
+      commuteMode: MODES.includes(body.commuteMode) ? body.commuteMode : 'wfh',
+      commuteKm,
       hasPurifier: body.hasPurifier === true,
     },
   };
 }
 
+/**
+ * Keep only known household groups, without duplicates.
+ * @param {unknown} raw
+ * @returns {string[]}
+ */
+function parseHousehold(raw) {
+  return Array.isArray(raw) ? [...new Set(raw.filter((h) => HOUSEHOLD.includes(h)))] : [];
+}
+
+/**
+ * Parse the one-way commute distance, rounded to 0.1 km.
+ * @param {unknown} raw
+ * @returns {number|null} null when out of range
+ */
+function parseCommuteKm(raw) {
+  const km = Number(raw ?? 0);
+  if (!Number.isFinite(km) || km < 0 || km > commuteKmMax) return null;
+  return Math.round(km * 10) / 10;
+}
+
 /** @returns {string|null} a cleaned query, or null if it is too short */
 function validateCityQuery(q) {
   const clean = cleanText(q);
-  return clean.length >= 2 ? clean : null;
+  return clean.length >= cityMinLength ? clean : null;
 }
 
 module.exports = { validateAdviceRequest, validateCityQuery, HOUSEHOLD, MODES };

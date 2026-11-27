@@ -8,8 +8,9 @@ try {
 }
 
 const { createApp } = require('./app');
+const { config } = require('./config');
 
-const port = Number(process.env.PORT) || 8080;
+const port = Number(process.env.PORT) || config.server.defaultPort;
 createApp().listen(port, () => {
   console.log(`Urban Air Quality Assistant running on http://localhost:${port}`);
 });

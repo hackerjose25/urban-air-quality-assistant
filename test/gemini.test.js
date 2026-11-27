@@ -14,7 +14,7 @@ const good = {
 
 test('parseModelJson accepts plain and fenced JSON', () => {
   assert.equal(parseModelJson(JSON.stringify(good)).summary, good.summary);
-  assert.equal(parseModelJson('```json\n' + JSON.stringify(good) + '\n```').routines.length, 1);
+  assert.equal(parseModelJson(`\`\`\`json\n${  JSON.stringify(good)  }\n\`\`\``).routines.length, 1);
 });
 
 test('parseModelJson drops malformed items and clips long text', () => {
